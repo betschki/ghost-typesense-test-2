@@ -1,12 +1,17 @@
 module.exports = {
     resolve: {
-        fallback: {
-            "stream": require.resolve("stream-browserify"),
-            "buffer": require.resolve("buffer/")
-        },
         alias: {
-            'node:stream': 'stream-browserify'
+            'node:stream': 'stream-browserify',
+            'stream': 'stream-browserify',
+            'buffer': 'buffer'
         }
+    },
+    node: {
+        __dirname: true,
+        __filename: true,
+        global: true,
+        process: true,
+        Buffer: true
     },
     plugins: [
         // Add Node.js polyfills
