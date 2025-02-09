@@ -1,0 +1,15 @@
+{
+  "name": "@magicpages/ghost-typesense-cli",
+  "version": "0.0.0",
+  "description": "CLI tool for managing Ghost content in Typesense",
+  "author": "MagicPages",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/magicpages/ghost-typesense.git",
+    "directory": "packages/cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+} 

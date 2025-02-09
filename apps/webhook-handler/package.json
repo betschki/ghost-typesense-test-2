@@ -1,8 +1,14 @@
 {
   "name": "@magicpages/ghost-typesense-webhook",
-  "version": "1.0.0",
-  "description": "Netlify webhook handler for Ghost Typesense integration",
-  "private": false,
+  "version": "0.0.0",
+  "description": "Webhook handler for real-time Ghost content synchronization with Typesense",
+  "author": "MagicPages",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/magicpages/ghost-typesense.git",
+    "directory": "apps/webhook-handler"
+  },
   "scripts": {
     "build": "tsup src/handler.ts --format cjs --dts",
     "clean": "rimraf dist",
@@ -26,6 +32,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "license": "MIT"
+  }
 } 

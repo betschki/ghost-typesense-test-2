@@ -1,7 +1,14 @@
 {
   "name": "@magicpages/ghost-typesense-config",
-  "version": "1.0.0",
-  "description": "Shared configuration types and utilities for Ghost Typesense integration",
+  "version": "0.0.0",
+  "description": "Configuration types and utilities for Ghost-Typesense integration",
+  "author": "MagicPages",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/magicpages/ghost-typesense.git",
+    "directory": "packages/config"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -32,6 +39,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "license": "MIT"
+  }
 } 

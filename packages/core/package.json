@@ -1,7 +1,14 @@
 {
   "name": "@magicpages/ghost-typesense-core",
-  "version": "1.0.0",
-  "description": "Core functionality for Ghost Typesense integration",
+  "version": "0.0.0",
+  "description": "Core functionality for Ghost-Typesense integration",
+  "author": "MagicPages",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/magicpages/ghost-typesense.git",
+    "directory": "packages/core"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -32,6 +39,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "license": "MIT"
+  }
 } 
