@@ -1,5 +1,5 @@
 const cheerio = require('cheerio');
-const htmlToText = require('@tryghost/html-to-plaintext');
+const { convert } = require('html-to-text');
 
 /**
  * Utility function to extract text content from HTML while preserving some structure
@@ -7,7 +7,13 @@ const htmlToText = require('@tryghost/html-to-plaintext');
  * @returns {string} Processed text content
  */
 const processHtmlContent = (html) => {
-    return htmlToText(html)
+    return convert(html, {
+        wordwrap: false,
+        selectors: [
+            { selector: 'img', format: 'skip' },
+            { selector: 'a', options: { hideLinkHrefIfSameAsText: true } }
+        ]
+    })
         .replace(/\n+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
