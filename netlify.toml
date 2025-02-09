@@ -18,7 +18,7 @@
 
 [template.environment]
   TYPESENSE_ACTIVE = "TRUE or FALSE. Set to TRUE to trigger indexing."
-  TYPESENSE_API_KEY = "Typesense API Key (Create a search-only API key in Typesense)"
+  TYPESENSE_API_KEY = "Typesense API Key"
   TYPESENSE_HOST = "Typesense Host"
   TYPESENSE_PORT = "Typesense Port"
   TYPESENSE_PROTOCOL = "Typesense Protocol"
