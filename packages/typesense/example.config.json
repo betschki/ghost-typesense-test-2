@@ -1,0 +1,35 @@
+{
+  "ghost": {
+    "apiKey": "",
+    "apiUrl": ""
+  },
+  "ignore_slugs": [
+    "the-slug-of-a-post-with-a-huge-amount-of-content-that-will-cause-errors"
+  ],
+  "typesense": {
+    "nodes": [{
+      "host": "localhost",
+      "port": "8108",
+      "protocol": "http"
+    }],
+    "apiKey": "",
+    "collection": "posts",
+    "collectionSettings": {
+      "enable_nested_fields": true,
+      "fields": [
+        {"name": "id", "type": "string"},
+        {"name": "title", "type": "string"},
+        {"name": "html", "type": "string"},
+        {"name": "custom_excerpt", "type": "string"},
+        {"name": "excerpt", "type": "string"},
+        {"name": "url", "type": "string"},
+        {"name": "tags", "type": "string[]", "facet": true},
+        {"name": "authors", "type": "string[]", "facet": true},
+        {"name": "headings", "type": "string[]"},
+        {"name": "slug", "type": "string", "facet": true},
+        {"name": "published_at", "type": "int64", "sort": true, "optional": true}
+      ],
+      "default_sorting_field": "published_at"
+    }
+  }
+}

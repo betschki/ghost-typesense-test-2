@@ -1,0 +1,28 @@
+{
+    "name": "@magicpages/typesense-indexer",
+    "version": "0.1.0",
+    "description": "IndexFactory for handling communication with the Typesense API",
+    "main": "index.js",
+    "scripts": {
+        "dev": "echo \"Run development tasks\"",
+        "test": "NODE_ENV=testing mocha './test/**/*.test.js'",
+        "lint": "eslint . --ext .js --cache",
+        "posttest": "yarn lint"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/magicpages/typesense.git"
+    },
+    "author": "MagicPages",
+    "license": "MIT",
+    "dependencies": {
+        "typesense": "^1.7.1",
+        "debug": "^4.3.4"
+    },
+    "devDependencies": {
+        "mocha": "^10.2.0",
+        "should": "^13.2.3",
+        "sinon": "^17.0.1",
+        "eslint": "^8.56.0"
+    }
+} 

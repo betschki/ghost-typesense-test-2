@@ -1,0 +1,15 @@
+[build]
+  functions = "functions-build"
+  publish = "public"
+
+[template.environment]
+  TYPESENSE_API_KEY = "Your Typesense Admin API key"
+  TYPESENSE_HOST = "Your Typesense Host"
+  TYPESENSE_PORT = "Your Typesense Port (default: 8108)"
+  TYPESENSE_PROTOCOL = "Your Typesense Protocol (http/https)"
+  NETLIFY_KEY = "Key to secure your Netlify Functions"
+
+[dev]
+  publish = "public"
+  functions = "functions"
+  framework = "#custom" 

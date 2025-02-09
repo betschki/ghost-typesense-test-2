@@ -1,0 +1,31 @@
+{
+  "ghost": {
+    "apiKey": "beac38c712399d8d87ed345cf2",
+    "apiUrl": "https://www.magicpages.co"
+  },
+  "ignore_slugs": [],
+  "typesense": {
+    "nodes": [{
+      "host": "168.119.187.7",
+      "port": "8108",
+      "protocol": "http"
+    }],
+    "apiKey": "C@rd1ffwales",
+    "collection": "669593954c86aa674675466c",
+    "collectionSettings": {
+      "fields": [
+        {"name": "title", "type": "string"},
+        {"name": "html", "type": "string"},
+        {"name": "custom_excerpt", "type": "string"},
+        {"name": "excerpt", "type": "string"},
+        {"name": "url", "type": "string"},
+        {"name": "tags", "type": "string[]", "facet": true},
+        {"name": "authors", "type": "string[]", "facet": true},
+        {"name": "headings", "type": "string[]"},
+        {"name": "slug", "type": "string", "facet": true},
+        {"name": "customRanking", "type": "object"}
+      ],
+      "default_sorting_field": "customRanking"
+    }
+  }
+}

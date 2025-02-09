@@ -1,0 +1,31 @@
+{
+  "ghost": {
+    "apiKey": "228b27c6f4da725c0d8b3f3d11",
+    "apiUrl": "https://www.jannis.io"
+  },
+  "ignore_slugs": [],
+  "typesense": {
+    "nodes": [{
+      "host": "168.119.187.7",
+      "port": "8108",
+      "protocol": "http"
+    }],
+    "apiKey": "C@rd1ffwales",
+    "collection": "6695922d4c86aa6746754657",
+    "collectionSettings": {
+      "fields": [
+        {"name": "title", "type": "string"},
+        {"name": "html", "type": "string"},
+        {"name": "custom_excerpt", "type": "string"},
+        {"name": "excerpt", "type": "string"},
+        {"name": "url", "type": "string"},
+        {"name": "tags", "type": "string[]", "facet": true},
+        {"name": "authors", "type": "string[]", "facet": true},
+        {"name": "headings", "type": "string[]"},
+        {"name": "slug", "type": "string", "facet": true},
+        {"name": "customRanking", "type": "object"}
+      ],
+      "default_sorting_field": "customRanking"
+    }
+  }
+}

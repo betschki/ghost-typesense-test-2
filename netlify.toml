@@ -1,0 +1,18 @@
+[build]
+  base = "packages/ghost-typesense-netlify"
+  command = "NODE_ENV=production yarn build"
+  functions = "build/functions"
+  publish = ""
+
+[build.environment]
+  NODE_VERSION = "22"
+  AWS_LAMBDA_JS_RUNTIME = "nodejs22.x"
+
+[template.environment]
+  TYPESENSE_ACTIVE = "TRUE or FALSE. Set to TRUE to trigger indexing."
+  TYPESENSE_API_KEY = "Typesense API Key"
+  TYPESENSE_HOST = "Typesense Host"
+  TYPESENSE_PORT = "Typesense Port"
+  TYPESENSE_PROTOCOL = "Typesense Protocol"
+  TYPESENSE_INDEX = "Name of the Typesense index"
+  NETLIFY_KEY = "User-defined key to authorize post requests to the Netlify function"
