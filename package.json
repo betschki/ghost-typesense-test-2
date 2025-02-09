@@ -1,27 +1,36 @@
 {
-  "private": true,
-  "repository": "https://github.com/magicpages/ghost-typesense",
-  "author": "Magic Pages",
-  "license": "MIT",
+  "name": "@magicpages/ghost-typesense",
+  "version": "1.0.0",
+  "private": false,
   "workspaces": [
+    "apps/*",
     "packages/*"
   ],
-  "eslintIgnore": [
-    "**/node_modules/**"
-  ],
   "scripts": {
-    "setup": "yarn",
-    "test:parent": "NODE_ENV=testing mocha './test/**/*.test.js'",
-    "test": "yarn test:parent && lerna run test",
-    "lint": "lerna run lint",
-    "preship": "yarn test",
-    "ship": "lerna publish"
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "postinstall": "turbo run build --filter=@magicpages/ghost-typesense-config --filter=@magicpages/ghost-typesense-core"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
-    "eslint": "8.54.0",
-    "eslint-plugin-ghost": "3.4.0",
-    "mocha": "10.2.0",
-    "should": "13.2.3",
-    "sinon": "17.0.1"
-  }
+    "@types/node": "^20.11.17",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.2.5",
+    "turbo": "^1.12.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "npm@10.2.4",
+  "license": "MIT"
 }

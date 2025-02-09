@@ -1,0 +1,34 @@
+{
+  "ghost": {
+    "url": "https://www.jannis.io",
+    "key": "228b27c6f4da725c0d8b3f3d11",
+    "version": "v5.0"
+  },
+  "typesense": {
+    "nodes": [
+      {
+        "host": "search.magicpages.co",
+        "port": 443,
+        "protocol": "https"
+      }
+    ],
+    "apiKey": "C@rd1ffwales",
+    "connectionTimeoutSeconds": 10,
+    "retryIntervalSeconds": 0.1
+  },
+  "collection": {
+    "name": "6695922d4c86aa6746754657",
+    "fields": [
+      { "name": "id", "type": "string" },
+      { "name": "title", "type": "string", "index": true, "sort": true },
+      { "name": "slug", "type": "string", "index": true },
+      { "name": "html", "type": "string", "index": true },
+      { "name": "excerpt", "type": "string", "index": true },
+      { "name": "feature_image", "type": "string", "index": false, "optional": true },
+      { "name": "published_at", "type": "int64", "sort": true },
+      { "name": "updated_at", "type": "int64", "sort": true },
+      { "name": "tags", "type": "string[]", "facet": true, "optional": true },
+      { "name": "authors", "type": "string[]", "facet": true, "optional": true }
+    ]
+  }
+} 
