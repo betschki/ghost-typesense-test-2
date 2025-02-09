@@ -1,9 +1,9 @@
 # Ghost Typesense tools
 
-Ghost Typesense tools offers tools to index and fragment Ghost posts to a Typesense index. It consists of two user facing tools:
+Ghost Typesense tools offers tools to index and fragment Ghost posts to a Typesense collection. It consists of two user facing tools:
 
-- `typesense`, which is a CLI tool to batch index the full content of a Ghost install to a defined Typesense index
-- `typesense-netlify`, which uses Netlify Functions to listen to Ghost webhooks and add, update, and remove posts to an Typesense index
+- `typesense`, which is a CLI tool to batch index the full content of a Ghost install to a defined Typesense collection
+- `typesense-netlify`, which uses Netlify Functions to listen to Ghost webhooks and add, update, and remove posts to an Typesense collection
 
 > **Note:** This project is based on the work of the [Ghost Foundation's Algolia tools](https://github.com/TryGhost/algolia) and aims to provide a similar experience for [Typesense](https://typesense.org/), an open-source search engine alternative to Algolia.
 

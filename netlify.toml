@@ -10,9 +10,9 @@
 
 [template.environment]
   TYPESENSE_ACTIVE = "TRUE or FALSE. Set to TRUE to trigger indexing."
-  TYPESENSE_API_KEY = "Typesense API Key"
+  TYPESENSE_API_KEY = "Typesense API Key (Create a search-only API key in Typesense)"
   TYPESENSE_HOST = "Typesense Host"
   TYPESENSE_PORT = "Typesense Port"
   TYPESENSE_PROTOCOL = "Typesense Protocol"
-  TYPESENSE_INDEX = "Name of the Typesense index"
+  TYPESENSE_COLLECTION = "Name of the Typesense collection"
   NETLIFY_KEY = "User-defined key to authorize post requests to the Netlify function"
