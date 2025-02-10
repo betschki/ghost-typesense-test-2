@@ -1,6 +1,6 @@
 import { Handler } from '@netlify/functions';
 import { z } from 'zod';
-import { validateConfig, createDefaultConfig } from '@magicpages/ghost-typesense-config';
+import { createDefaultConfig } from '@magicpages/ghost-typesense-config';
 import { GhostTypesenseManager } from '@magicpages/ghost-typesense-core';
 
 // Validate environment variables

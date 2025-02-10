@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   validateConfig,
   createDefaultConfig,
-  DEFAULT_COLLECTION_FIELDS,
-  type Config
+  DEFAULT_COLLECTION_FIELDS
 } from '../index';
 
 describe('Config Validation', () => {
