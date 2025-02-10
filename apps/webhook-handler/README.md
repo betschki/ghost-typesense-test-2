@@ -1,107 +1,99 @@
-# Ghost Typesense Webhook Handler
+# @magicpages/ghost-typesense-webhook
 
-A production-ready Netlify Function that keeps your [Typesense](https://typesense.org/) search index synchronized with your [Ghost](https://ghost.org/) blog content in real-time. This webhook handler automatically processes content updates from Ghost and reflects them in your Typesense search index.
+A Netlify Function that handles Ghost webhooks to keep your Typesense search index in sync with your Ghost content in real-time.
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/magicpages/ghost-typesense)
+## Installation
 
-## Features
-
-The webhook handler provides seamless integration between Ghost and Typesense. It enables real-time content synchronization and automatic handling of post publishing, updates, unpublishing, and deleting. The handler implements type-safe request processing with runtime validation and includes comprehensive error handling and logging capabilities.
-
-## Deployment
-
-### Option 1: One-Click Deploy (Recommended)
-
-1. Click the "Deploy to Netlify" button above
-2. Connect your GitHub account
-3. Configure the required environment variables
-4. Deploy the function
-
-### Option 2: Manual Deployment
-
-1. Clone the repository:
 ```bash
-git clone https://github.com/magicpages/ghost-typesense.git
-cd ghost-typesense
+npm install @magicpages/ghost-typesense-webhook
 ```
 
-2. Install dependencies:
-```bash
-npm install
+## Usage with Netlify
+
+1. Install the package in your Netlify project
+2. Create a `netlify.toml` configuration:
+
+```toml
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[functions.ghost-typesense]
+  external_node_modules = ["@netlify/functions"]
 ```
 
-3. Build the project:
-```bash
-npm run build
+3. Create the function in your Netlify functions directory:
+
+```typescript
+// netlify/functions/ghost-typesense.ts
+import { handler } from '@magicpages/ghost-typesense-webhook';
+export { handler };
 ```
 
-4. Deploy using the Netlify CLI:
-```bash
-netlify deploy --prod
-```
+4. Configure environment variables in your Netlify dashboard:
 
-## Configuration
-
-### Environment Variables
-
-Configure the following environment variables in your Netlify dashboard:
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `GHOST_URL` | Your Ghost blog URL | `https://blog.example.com` |
-| `GHOST_CONTENT_API_KEY` | Ghost Content API key | `1234abcd...` |
-| `TYPESENSE_HOST` | Typesense server host | `search.example.com` |
-| `TYPESENSE_API_KEY` | Typesense API key (full API access, not search-only) | `xyz789...` |
-| `COLLECTION_NAME` | Typesense collection name | `posts` |
-| `WEBHOOK_SECRET` | A secure random string to validate webhook requests | `your-secret-key` |
-
-### Ghost Integration Setup
-
-1. Access your Ghost Admin panel
-2. Navigate to Settings → Integrations
-3. Click "Add custom integration"
-4. Name your integration (e.g., "Typesense Search")
-5. Copy the Content API Key
-6. Generate a secure random string for your webhook secret:
-   ```bash
-   openssl rand -hex 32
-   ```
-7. Under Webhooks, add the following webhooks:
-
-| Name | Event | Target URL |
-|------|--------|------------|
-| Post published | Post published | `https://your-netlify-site.netlify.app/.netlify/functions/handler?secret=your-secret-key` |
-| Post updated | Post updated | `https://your-netlify-site.netlify.app/.netlify/functions/handler?secret=your-secret-key` |
-| Post unpublished | Post unpublished | `https://your-netlify-site.netlify.app/.netlify/functions/handler?secret=your-secret-key` |
-| Post deleted | Post deleted | `https://your-netlify-site.netlify.app/.netlify/functions/handler?secret=your-secret-key` |
-
-Make sure to replace `your-secret-key` with the same secure random string you set in your Netlify environment variables.
-
-## Local Development
-
-1. Install dependencies:
-```bash
-npm install
-```
-
-2. Create a `.env` file with your configuration:
 ```env
-GHOST_URL=https://your-blog.ghost.io
-GHOST_CONTENT_API_KEY=your_content_api_key
-TYPESENSE_HOST=your_typesense_host
-TYPESENSE_API_KEY=your_typesense_api_key
-COLLECTION_NAME=posts
-WEBHOOK_SECRET=your-development-secret
+GHOST_URL=https://your-ghost-blog.com
+GHOST_ADMIN_API_KEY=your-admin-api-key
+GHOST_WEBHOOK_SECRET=your-webhook-secret
+TYPESENSE_HOST=your-typesense-host
+TYPESENSE_PORT=443
+TYPESENSE_PROTOCOL=https
+TYPESENSE_API_KEY=your-typesense-api-key
+TYPESENSE_COLLECTION_NAME=posts
 ```
 
-3. Start the development server:
-```bash
-npm run dev
-```
+5. Configure the webhook in Ghost Admin:
+   - Go to Settings > Integrations
+   - Create a new Custom Integration
+   - Add a webhook with the following settings:
+     - Event: Post published/updated/unpublished
+     - Target URL: Your Netlify function URL (e.g., `https://your-site.netlify.app/.netlify/functions/ghost-typesense`)
 
-4. Send webhook events to the local server from a local Ghost instance, including your secret:
-   `http://localhost:8888/.netlify/functions/handler?secret=your-development-secret`
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `GHOST_URL` | URL of your Ghost blog |
+| `GHOST_ADMIN_API_KEY` | Ghost Admin API key |
+| `GHOST_WEBHOOK_SECRET` | Secret for validating webhook requests |
+| `TYPESENSE_HOST` | Typesense server host |
+| `TYPESENSE_PORT` | Typesense server port |
+| `TYPESENSE_PROTOCOL` | Typesense server protocol (http/https) |
+| `TYPESENSE_API_KEY` | Typesense API key |
+| `TYPESENSE_COLLECTION_NAME` | Name of the Typesense collection |
+
+## Webhook Events
+
+The handler processes the following Ghost webhook events:
+
+- `post.published`: Adds or updates the post in Typesense
+- `post.updated`: Updates the post in Typesense
+- `post.unpublished`: Removes the post from Typesense
+- `post.deleted`: Removes the post from Typesense
+
+## Security
+
+The webhook handler validates incoming requests using the `GHOST_WEBHOOK_SECRET`. Make sure to:
+
+1. Generate a secure random string for your webhook secret
+2. Configure the same secret in both Ghost and your environment variables
+3. Keep your secret secure and never commit it to version control
+
+## Error Handling
+
+The handler includes comprehensive error handling:
+
+- Validates webhook signatures
+- Validates request payloads
+- Handles Ghost API errors
+- Handles Typesense errors
+- Returns appropriate HTTP status codes
+
+## TypeScript Support
+
+This package is written in TypeScript and includes full type definitions. It uses strict type checking and provides comprehensive type safety for all APIs.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.
+MIT - see the [LICENSE](../../LICENSE) file for details.
