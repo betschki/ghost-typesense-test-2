@@ -13,14 +13,12 @@
     "test": "turbo run test",
     "clean": "turbo run clean",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "postinstall": "turbo run build --filter=@magicpages/ghost-typesense-config --filter=@magicpages/ghost-typesense-core",
-    "publish-packages": "turbo run build lint test && changeset publish"
+    "postinstall": "turbo run build --filter=@magicpages/ghost-typesense-config --filter=@magicpages/ghost-typesense-core"
   },
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.27.1",
     "@types/node": "^20.11.17",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",

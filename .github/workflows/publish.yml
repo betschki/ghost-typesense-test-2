@@ -6,7 +6,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
   packages: write
 
 jobs:
@@ -22,11 +21,18 @@ jobs:
       - name: Install dependencies
         run: npm install
       
-      - name: Create Release Pull Request or Publish
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          publish: npm run publish-packages
+      - name: Build, Lint and Test
+        run: |
+          npm run build
+          npm run lint
+          npm run test
+      
+      - name: Publish Packages
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          npm publish -w packages/config --access public || true
+          npm publish -w packages/core --access public || true
+          npm publish -w apps/cli --access public || true
+          npm publish -w apps/webhook-handler --access public || true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }} 
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} 
