@@ -25,8 +25,8 @@ const WebhookSchema = z.object({
       visibility: z.string(),
       updated_at: z.string(),
       published_at: z.string().nullable(),
-      custom_excerpt: z.string().nullable(),
-      feature_image: z.string().nullable(),
+      custom_excerpt: z.string().nullable().optional(),
+      feature_image: z.string().nullable().optional(),
       tags: z.array(z.object({
         name: z.string()
       })).optional(),

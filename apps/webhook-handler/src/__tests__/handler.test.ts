@@ -18,12 +18,16 @@ Object.entries(mockEnv).forEach(([key, value]) => {
 });
 
 // Mock the core package
-vi.mock('@magicpages/ghost-typesense-core', () => ({
-  GhostTypesenseManager: vi.fn().mockImplementation(() => ({
-    indexPost: vi.fn().mockResolvedValue(undefined),
-    deletePost: vi.fn().mockResolvedValue(undefined)
-  }))
-}));
+vi.mock('@magicpages/ghost-typesense-core', () => {
+  const indexPost = vi.fn().mockResolvedValue(undefined);
+  const deletePost = vi.fn().mockResolvedValue(undefined);
+  return {
+    GhostTypesenseManager: vi.fn().mockImplementation(() => ({
+      indexPost,
+      deletePost
+    }))
+  };
+});
 
 describe('Webhook Handler', () => {
   beforeEach(() => {
@@ -117,8 +121,14 @@ describe('Webhook Handler', () => {
           current: {
             id: 'test-post-1',
             title: 'Test Post',
+            slug: 'test-post-1',
+            html: '<p>Test content</p>',
             status: 'published',
-            visibility: 'public'
+            visibility: 'public',
+            updated_at: '2024-02-09T12:00:00.000Z',
+            published_at: '2024-02-09T12:00:00.000Z',
+            custom_excerpt: 'Test excerpt',
+            feature_image: null
           }
         }
       })
@@ -141,8 +151,14 @@ describe('Webhook Handler', () => {
           current: {
             id: 'test-post-1',
             title: 'Test Post',
+            slug: 'test-post-1',
+            html: '<p>Test content</p>',
             status: 'draft',
-            visibility: 'public'
+            visibility: 'public',
+            updated_at: '2024-02-09T12:00:00.000Z',
+            published_at: '2024-02-09T12:00:00.000Z',
+            custom_excerpt: 'Test excerpt',
+            feature_image: null
           }
         }
       })
