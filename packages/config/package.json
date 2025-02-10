@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/magicpages/ghost-typesense.git",
+    "url": "git+https://github.com/magicpages/ghost-typesense.git",
     "directory": "packages/config"
   },
   "main": "./dist/index.js",

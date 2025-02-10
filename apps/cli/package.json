@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "ghost-typesense": "./dist/index.js"
+    "ghost-typesense": "dist/index.js"
   },
   "files": [
     "dist"

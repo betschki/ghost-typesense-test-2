@@ -27,16 +27,13 @@ jobs:
           npm run lint
           npm run test
       
-      - name: Create npm scope
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-          npm org create magicpages || true
-      
       - name: Publish Packages
         run: |
-          npm publish -w packages/config --access public || true
-          npm publish -w packages/core --access public || true
-          npm publish -w apps/cli --access public || true
-          npm publish -w apps/webhook-handler --access public || true
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          npm pkg fix --workspaces
+          npm publish -w packages/config --access public
+          npm publish -w packages/core --access public
+          npm publish -w apps/cli --access public
+          npm publish -w apps/webhook-handler --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} 
