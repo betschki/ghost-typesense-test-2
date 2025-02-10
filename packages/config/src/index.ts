@@ -6,7 +6,7 @@ import { z } from 'zod';
 export const GhostConfigSchema = z.object({
   url: z.string().url(),
   key: z.string().min(1),
-  version: z.string().default('v5.0')
+  version: z.literal('v5.0').default('v5.0')
 });
 
 /**
