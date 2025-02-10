@@ -4,6 +4,16 @@
 
 ### Major Changes
 
+- 3d371be: Initial release of Ghost Typesense integration packages:
+  - Type-safe configuration and utilities
+  - Core functionality for Ghost-Typesense synchronization
+  - CLI tool for content management
+  - Webhook handler for real-time updates
+
+## 2.0.0
+
+### Major Changes
+
 - 35c8344: Initial release of Ghost Typesense integration packages:
 
 ## 1.0.0
