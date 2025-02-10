@@ -1,8 +1,8 @@
 name: Publish
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -27,9 +27,13 @@ jobs:
           npm run lint
           npm run test
       
-      - name: Publish Packages
+      - name: Create npm scope
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          npm org create magicpages || true
+      
+      - name: Publish Packages
+        run: |
           npm publish -w packages/config --access public || true
           npm publish -w packages/core --access public || true
           npm publish -w apps/cli --access public || true
