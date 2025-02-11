@@ -20,11 +20,13 @@ const WebhookSchema = z.object({
       id: z.string(),
       title: z.string(),
       slug: z.string(),
+      url: z.string().url(),
       html: z.string(),
       status: z.string(),
       visibility: z.string(),
       updated_at: z.string(),
       published_at: z.string().nullable(),
+      excerpt: z.string().nullable(),
       custom_excerpt: z.string().nullable().optional(),
       feature_image: z.string().nullable().optional(),
       tags: z.array(z.object({

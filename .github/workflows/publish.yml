@@ -33,6 +33,7 @@ jobs:
           npm pkg fix --workspaces
           npm publish -w packages/config --access public
           npm publish -w packages/core --access public
+          npm publish -w packages/search-ui --access public
           npm publish -w apps/cli --access public
           npm publish -w apps/webhook-handler --access public
         env:

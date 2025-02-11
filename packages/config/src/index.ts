@@ -39,14 +39,67 @@ export const CollectionFieldSchema = z.object({
   index: z.boolean().optional(),
   optional: z.boolean().optional(),
   sort: z.boolean().optional()
-});
+}).transform(data => ({
+  ...data,
+  optional: data.optional ?? false
+}));
 
 /**
- * Collection configuration schema
+ * Required fields that must be present in the collection
+ */
+export const REQUIRED_FIELDS = {
+  id: { type: 'string' as const, description: 'Unique identifier for the post' },
+  title: { type: 'string' as const, description: 'Post title' },
+  url: { type: 'string' as const, description: 'Full URL to the post' },
+  slug: { type: 'string' as const, description: 'URL-friendly post slug' },
+  html: { type: 'string' as const, description: 'Post content in HTML format' },
+  excerpt: { type: 'string' as const, description: 'Post excerpt or summary' },
+  published_at: { type: 'int64' as const, description: 'Post publication timestamp' },
+  updated_at: { type: 'int64' as const, description: 'Post last update timestamp' }
+} as const;
+
+/**
+ * Collection configuration schema with strict validation
  */
 export const CollectionConfigSchema = z.object({
-  name: z.string(),
-  fields: z.array(CollectionFieldSchema).min(1),
+  name: z.string().min(1, 'Collection name cannot be empty'),
+  fields: z.array(CollectionFieldSchema)
+    .min(1, 'At least one field must be defined')
+    .refine(
+      (fields) => {
+        // Check if all required fields are present with correct types and not optional
+        const missingOrInvalidFields = Object.entries(REQUIRED_FIELDS)
+          .filter(([fieldName, spec]) => {
+            const field = fields.find(f => f.name === fieldName);
+            // A field is invalid if:
+            // 1. It doesn't exist
+            // 2. It has the wrong type
+            // 3. It's marked as optional
+            return !field || field.type !== spec.type || field.optional === true;
+          });
+
+        if (missingOrInvalidFields.length > 0) {
+          const errors = missingOrInvalidFields.map(([fieldName, spec]) => {
+            const field = fields.find(f => f.name === fieldName);
+            if (!field) {
+              return `Missing required field "${fieldName}" (${spec.description})`;
+            }
+            if (field.type !== spec.type) {
+              return `Field "${fieldName}" must be of type "${spec.type}" (${spec.description})`;
+            }
+            if (field.optional === true) {
+              return `Field "${fieldName}" cannot be optional (${spec.description})`;
+            }
+            return `Invalid configuration for "${fieldName}"`;
+          });
+          throw new Error(`Invalid collection configuration:\n- ${errors.join('\n- ')}`);
+        }
+        return true;
+      },
+      {
+        message: 'Collection configuration is invalid'
+      }
+    ),
   default_sorting_field: z.string().optional()
 });
 
@@ -83,14 +136,15 @@ export function validateConfig(config: unknown): Config {
  * Default collection fields that should be included
  */
 export const DEFAULT_COLLECTION_FIELDS: CollectionField[] = [
-  { name: 'id', type: 'string' },
-  { name: 'title', type: 'string' },
-  { name: 'slug', type: 'string' },
-  { name: 'html', type: 'string' },
-  { name: 'excerpt', type: 'string' },
-  { name: 'feature_image', type: 'string', optional: true },
-  { name: 'published_at', type: 'int64' },
-  { name: 'updated_at', type: 'int64' },
+  { name: 'id', type: 'string', optional: false },
+  { name: 'title', type: 'string', index: true, sort: true, optional: false },
+  { name: 'url', type: 'string', index: true, optional: false },
+  { name: 'slug', type: 'string', index: true, optional: false },
+  { name: 'html', type: 'string', index: true, optional: false },
+  { name: 'excerpt', type: 'string', index: true, optional: false },
+  { name: 'feature_image', type: 'string', index: false, optional: true },
+  { name: 'published_at', type: 'int64', sort: true, optional: false },
+  { name: 'updated_at', type: 'int64', sort: true, optional: false },
   { name: 'tags', type: 'string[]', facet: true, optional: true },
   { name: 'authors', type: 'string[]', facet: true, optional: true }
 ];

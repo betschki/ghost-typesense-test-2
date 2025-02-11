@@ -99,13 +99,13 @@ describe('GhostTypesenseManager', () => {
     collection: {
       name: 'test-collection',
       fields: [
-        { name: 'id', type: 'string' },
-        { name: 'title', type: 'string' },
-        { name: 'slug', type: 'string' },
-        { name: 'html', type: 'string' },
-        { name: 'excerpt', type: 'string' },
-        { name: 'published_at', type: 'int64' },
-        { name: 'updated_at', type: 'int64' }
+        { name: 'id', type: 'string', optional: false },
+        { name: 'title', type: 'string', optional: false },
+        { name: 'slug', type: 'string', optional: false },
+        { name: 'html', type: 'string', optional: true },
+        { name: 'excerpt', type: 'string', optional: true },
+        { name: 'published_at', type: 'int64', optional: false },
+        { name: 'updated_at', type: 'int64', optional: false }
       ]
     }
   };
