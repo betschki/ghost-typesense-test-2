@@ -4,8 +4,63 @@ import { searchBox, hits } from 'instantsearch.js/es/widgets';
 import './styles.css';
 
 (function() {
+    // Keep track of our initialization state
+    let isInitialized = false;
+
+    // Function to take over Ghost's search functionality
+    function takeOverSearch() {
+        // Override Ghost's search modal if it exists
+        const existingModal = document.getElementById('sodo-search-root');
+        if (existingModal) {
+            existingModal.innerHTML = ''; // Clear Ghost's search content
+            existingModal.style.display = 'none';
+        }
+
+        // Override Ghost's keyboard shortcut handler
+        document.removeEventListener('keydown', window.__ghost_search_trigger);
+        window.__ghost_search_trigger = null;
+
+        // Disable Ghost's search initialization
+        window.ghost?.init?.search?.disable?.();
+
+        // Clean up Ghost's search instance
+        if (window.ghost?.search) {
+            window.ghost.search = null;
+        }
+    }
+
+    // Watch for Ghost's search script and take over when it loads
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === 1 && // Element node
+                    node.tagName === 'SCRIPT' && 
+                    (node.src.includes('sodo-search') || node.getAttribute('data-sodo-search'))) {
+                    takeOverSearch();
+                }
+            });
+        });
+    });
+
+    // Start observing
+    observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true
+    });
+
+    // Take over immediately if Ghost's search is already present
+    if (document.querySelector('script[data-sodo-search]')) {
+        takeOverSearch();
+    }
+
     class MagicPagesSearch {
         constructor(config = {}) {
+            // Prevent multiple instances
+            if (isInitialized) {
+                console.warn('MagicPagesSearch is already initialized');
+                return window.magicSearch;
+            }
+
             const defaultConfig = window.__MP_SEARCH_CONFIG__ || {
                 typesenseNodes: [{
                     host: 'localhost',
@@ -35,6 +90,8 @@ import './styles.css';
             
             this.selectedIndex = -1;
             this.init();
+
+            isInitialized = true;
         }
 
         getSearchParameters() {
@@ -106,6 +163,10 @@ import './styles.css';
                                         <span>
                                             <kbd class="mp-kbd">↑↓</kbd>
                                             to navigate
+                                        </span>
+                                        <span>
+                                            <kbd class="mp-kbd">/</kbd>
+                                            to search
                                         </span>
                                         <span>
                                             <kbd class="mp-kbd">esc</kbd>
@@ -362,25 +423,38 @@ import './styles.css';
         }
 
         handleKeydown(e) {
-            if (window.innerWidth < 640) return;
-            if (this.modal.classList.contains('hidden')) return;
+            // Don't handle keyboard shortcuts if target is an input or textarea
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
 
-            switch (e.key) {
-                case 'Escape':
-                    this.closeModal();
-                    break;
-                case 'ArrowDown':
+            if (window.innerWidth < 640) return;
+
+            if (this.modal.classList.contains('hidden')) {
+                // Open search with forward slash
+                if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
                     e.preventDefault();
-                    this.navigateResults('next');
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    this.navigateResults('prev');
-                    break;
-                case 'Enter':
-                    e.preventDefault();
-                    this.handleEnterKey();
-                    break;
+                    this.openModal();
+                    return;
+                }
+            } else {
+                switch (e.key) {
+                    case 'Escape':
+                        this.closeModal();
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        this.navigateResults('next');
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        this.navigateResults('prev');
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        this.handleEnterKey();
+                        break;
+                }
             }
         }
 
@@ -456,6 +530,10 @@ import './styles.css';
     
     // Auto-initialize when the script loads
     document.addEventListener('DOMContentLoaded', () => {
-        window.magicSearch = new MagicPagesSearch();
+        // Initialize if we have a config or if #/search is in the URL
+        if (window.__MP_SEARCH_CONFIG__ || window.location.hash === '#/search') {
+            takeOverSearch(); // Ensure we take over before initializing
+            window.magicSearch = new MagicPagesSearch();
+        }
     });
 })(); 
