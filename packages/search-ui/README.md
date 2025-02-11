@@ -2,7 +2,7 @@
 
 A beautiful, accessible search interface for Ghost blogs using Typesense. Built with vanilla JavaScript.
 
-![Search UI Preview](https://raw.githubusercontent.com/magicpages/ghost-typesense/main/packages/search-ui/preview.png)
+![Search UI Preview](./preview.png)
 
 ## Features
 
