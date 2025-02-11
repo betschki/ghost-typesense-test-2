@@ -127,6 +127,8 @@ describe('Webhook Handler', () => {
             visibility: 'public',
             updated_at: '2024-02-09T12:00:00.000Z',
             published_at: '2024-02-09T12:00:00.000Z',
+            url: 'https://test.com/test-post-1',
+            excerpt: 'Test excerpt',
             custom_excerpt: 'Test excerpt',
             feature_image: null
           }
@@ -157,6 +159,8 @@ describe('Webhook Handler', () => {
             visibility: 'public',
             updated_at: '2024-02-09T12:00:00.000Z',
             published_at: '2024-02-09T12:00:00.000Z',
+            url: 'https://test.com/test-post-1',
+            excerpt: 'Test excerpt',
             custom_excerpt: 'Test excerpt',
             feature_image: null
           }
