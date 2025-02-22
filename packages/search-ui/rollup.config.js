@@ -2,15 +2,19 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import replace from '@rollup/plugin-replace';
 import terser from '@rollup/plugin-terser';
-import postcss from 'rollup-plugin-postcss';
-import cssnano from 'cssnano';
+import fs from 'fs';
+import path from 'path';
+
+// Read CSS file directly
+const css = fs.readFileSync(path.resolve('src/styles.css'), 'utf8');
 
 export default {
   input: 'src/search.js',
   output: {
     file: 'dist/search.min.js',
     format: 'iife',
-    name: 'MagicPagesSearch'
+    name: 'MagicPagesSearch',
+    banner: `const BUNDLED_CSS = ${JSON.stringify(css)};`
   },
   plugins: [
     replace({
@@ -19,19 +23,6 @@ export default {
       'process.env': JSON.stringify({
         NODE_ENV: 'production'
       })
-    }),
-    postcss({
-      config: false,
-      plugins: [
-        cssnano({
-          preset: ['default', {
-            discardComments: { removeAll: true }
-          }]
-        })
-      ],
-      inject: true,
-      minimize: true,
-      extract: false
     }),
     resolve({
       browser: true,

@@ -1,7 +1,8 @@
 import TypesenseInstantSearchAdapter from 'typesense-instantsearch-adapter';
 import instantsearch from 'instantsearch.js/dist/instantsearch.production.min';
 import { searchBox, hits } from 'instantsearch.js/es/widgets';
-import './styles.css';
+
+// BUNDLED_CSS will be injected by rollup banner
 
 (function () {
     let isInitialized = false;
@@ -21,16 +22,14 @@ import './styles.css';
         set: () => { }
     });
 
-    // Remove any existing sodo-search elements and prevent new ones from being added
+    // Remove any existing sodo-search elements
     const observer = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
             for (const node of mutation.addedNodes) {
-                if (node.nodeType === 1) { // Element node
-                    // Remove script tags with data-sodo-search
+                if (node.nodeType === 1) {
                     if (node.tagName === 'SCRIPT' && node.hasAttribute('data-sodo-search')) {
                         node.remove();
                     }
-                    // Remove the root div if it's added
                     if (node.id === 'sodo-search-root') {
                         node.remove();
                     }
@@ -39,38 +38,26 @@ import './styles.css';
         }
     });
 
-    // Start observing before anything else
     observer.observe(document.documentElement, {
         childList: true,
         subtree: true
     });
 
-    // Initial cleanup
     function cleanupGhostSearch() {
-        // Remove any existing sodo-search elements
         const searchScript = document.querySelector('script[data-sodo-search]');
-        if (searchScript) {
-            searchScript.remove();
-        }
-
+        if (searchScript) searchScript.remove();
         const searchRoot = document.getElementById('sodo-search-root');
-        if (searchRoot) {
-            searchRoot.remove();
-        }
+        if (searchRoot) searchRoot.remove();
     }
 
-    // Call it immediately
     cleanupGhostSearch();
-
-    // Also call it when DOM is ready to catch any late additions
     document.addEventListener('DOMContentLoaded', cleanupGhostSearch);
 
     class MagicPagesSearch {
         constructor(config = {}) {
-            // Prevent multiple instances
             if (isInitialized) {
                 console.warn('MagicPagesSearch is already initialized');
-                return window.magicSearch;
+                return window.magicPagesSearch;
             }
 
             const defaultConfig = window.__MP_SEARCH_CONFIG__ || {
@@ -81,8 +68,9 @@ import './styles.css';
                 }],
                 typesenseApiKey: null,
                 collectionName: null,
-                commonSearches: [], // Default to empty array
-                theme: 'system', // 'light', 'dark', or 'system'
+                commonSearches: [],
+                theme: 'system',
+                theme: 'system',
                 searchFields: {
                     title: { weight: 4, highlight: true },
                     excerpt: { weight: 2, highlight: true },
@@ -91,7 +79,6 @@ import './styles.css';
             };
 
             this.config = {
-                // Ensure commonSearches is always an array
                 commonSearches: [],
                 ...defaultConfig,
                 ...config,
@@ -99,21 +86,199 @@ import './styles.css';
             };
 
             if (!this.config.typesenseNodes || !this.config.typesenseApiKey || !this.config.collectionName) {
-                throw new Error('MagicPagesSearch: Missing required configuration. Please ensure typesenseNodes, typesenseApiKey, and collectionName are provided.');
+                throw new Error('MagicPagesSearch: Missing required configuration');
             }
 
             this.selectedIndex = -1;
-            this.init();
+            this.searchDebounceTimeout = null;
+            this.cachedElements = {};
 
+
+            this.init();
             isInitialized = true;
         }
 
+        getParentAccentColor() {
+            try {
+                const computedStyle = window.getComputedStyle(document.documentElement);
+                const accentColor = computedStyle.getPropertyValue('--ghost-accent-color').trim();
+                return accentColor || null;
+            } catch (error) {
+                console.warn('Failed to get Ghost accent color:', error);
+                return null;
+            }
+        }
+
+        updateDarkMode() {
+            const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            if (this.doc) {
+                this.doc.documentElement.classList.toggle('dark', isDarkMode);
+            }
+        }
+
+        createIframe() {
+            // Create iframe with initial styles
+            this.iframe = document.createElement('iframe');
+
+            // Set initial z-index based on viewport width
+            const isMobile = window.innerWidth < 640;
+            const zIndex = isMobile ? 3999999 : 3999997;
+
+            this.iframe.style.cssText = `
+                border: none;
+                width: 100vw;
+                height: 100vh;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: ${zIndex};
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            `;
+
+            // Handle visual viewport changes (e.g., mobile keyboard)
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', () => {
+                    if (this.modal && this.modal.classList.contains('hidden')) return;
+
+                    const modalContainer = this.doc.querySelector('.mp-modal-container');
+                    if (modalContainer) {
+                        modalContainer.style.height = `${window.visualViewport.height}px`;
+                        modalContainer.style.transform = `translateY(${window.visualViewport.offsetTop}px)`;
+                    }
+                });
+            }
+
+            // Update z-index on resize
+            window.addEventListener('resize', () => {
+                const isMobile = window.innerWidth < 640;
+                this.iframe.style.zIndex = isMobile ? 3999999 : 3999997;
+            });
+            document.body.appendChild(this.iframe);
+
+            // Get iframe document
+            this.doc = this.iframe.contentDocument || this.iframe.contentWindow.document;
+
+            // Get Ghost's accent color
+            const accentColor = this.getParentAccentColor();
+            const accentColorStyle = accentColor ? `
+                :root {
+                    --ghost-accent-color: ${accentColor};
+                }` : '';
+
+            // Write initial HTML with styles
+            this.doc.open();
+            this.doc.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>${accentColorStyle}</style>
+                    <style>${BUNDLED_CSS}</style>
+                </head>
+                <body>
+                    <div id="mp-search-wrapper" data-theme="${this.config.theme}">
+                        <div id="mp-search-modal" class="hidden" role="dialog" aria-modal="true" aria-label="Search">
+                            <div class="mp-backdrop"></div>
+                            <div class="mp-modal-container">
+                                <button class="mp-close-button" aria-label="Close search">
+                                    <span aria-hidden="true">×</span>
+                                </button>
+                                <div class="mp-modal-content">
+                                    <div class="mp-search-header">
+                                        <div id="mp-searchbox" role="search"></div>
+                                        <div class="mp-keyboard-hints">
+                                            <span>
+                                                <kbd class="mp-kbd">↑↓</kbd>
+                                                to navigate
+                                            </span>
+                                            <span>
+                                                <kbd class="mp-kbd">esc</kbd>
+                                                to close
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="mp-results-container">
+                                        ${this.getCommonSearchesHtml()}
+                                        <div id="mp-hits" role="region" aria-label="Search results"></div>
+                                        <div id="mp-loading-state" class="mp-loading-state" role="status" aria-live="polite">
+                                            <div class="mp-loading-spinner" aria-hidden="true"></div>
+                                            <div>Searching...</div>
+                                        </div>
+                                        <div id="mp-empty-state" class="hidden" role="status" aria-live="polite">
+                                            <div class="mp-empty-message">
+                                                <p>No results found for your search</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+            this.doc.close();
+
+            // Store references
+            this.modal = this.doc.getElementById('mp-search-modal');
+            this.wrapper = this.doc.getElementById('mp-search-wrapper');
+            this.cachedElements = { modal: this.modal, wrapper: this.wrapper };
+
+            // Initial dark mode check
+            this.updateDarkMode();
+
+            // Watch for system dark mode changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                this.updateDarkMode();
+            });
+
+            // Watch for Ghost theme dark mode changes
+            const observer = new MutationObserver(() => {
+                this.updateDarkMode();
+            });
+
+            observer.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        }
+
+        getCommonSearchesHtml() {
+            if (!this.config.commonSearches?.length) {
+                return `
+                    <div class="mp-common-searches">
+                        <div class="mp-empty-message">Start typing to search...</div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="mp-common-searches">
+                    <div class="mp-common-searches-title" role="heading" aria-level="2">
+                        Common searches
+                    </div>
+                    <div id="mp-common-searches-container" role="list">
+                        ${this.config.commonSearches.map(search => `
+                            <button type="button" 
+                                class="mp-common-search-btn" 
+                                data-search="${search}"
+                                role="listitem">
+                                ${search}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         getSearchParameters() {
-            // Ensure we have at least some search fields configured
             const fields = Object.keys(this.config.searchFields || {}).length > 0
                 ? this.config.searchFields
                 : {
-                    // Default fallback fields based on typical Ghost schema
                     title: { weight: 4, highlight: true },
                     excerpt: { weight: 2, highlight: true },
                     html: { weight: 1, highlight: true }
@@ -131,108 +296,33 @@ import './styles.css';
                 }
             });
 
-            // Ensure we have at least one search field
-            if (searchFields.length === 0) {
-                console.warn('No search fields configured, falling back to title field');
-                searchFields.push('title');
-                weights.push(1);
-                highlightFields.push('title');
-            }
-
             return {
                 query_by: searchFields.join(','),
                 query_by_weights: weights.join(','),
                 highlight_full_fields: highlightFields.join(','),
                 highlight_affix_num_tokens: 20,
-                include_fields: '*',  // Include all fields in the response
+                include_fields: 'title,url,excerpt,html',
                 typo_tolerance: true,
-                num_typos: 1,
+                num_typos: 2,
+                prefix: true,
                 per_page: 10
             };
         }
 
-        createSearchModal() {
-            const commonSearchesHtml = this.config.commonSearches?.length
-                ? `
-                    <div class="mp-common-searches">
-                        <div class="mp-common-searches-title" role="heading" aria-level="2">
-                            Common searches
-                        </div>
-                        <div id="mp-common-searches-container" role="list">
-                            ${this.config.commonSearches.map(search => `
-                                <button type="button" 
-                                    class="mp-common-search-btn" 
-                                    data-search="${search}"
-                                    role="listitem">
-                                    ${search}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                `
-                : `<div class="mp-common-searches">
-                    <div class="mp-empty-message">Start typing to search...</div>
-                  </div>`;
-
-            const modalHtml = `
-                <div id="mp-search-wrapper" data-theme="${this.config.theme}">
-                    <div id="mp-search-modal" class="hidden" role="dialog" aria-modal="true" aria-label="Search">
-                        <div class="mp-backdrop"></div>
-                        <div class="mp-modal-container">
-                            <button 
-                                class="mp-close-button" 
-                                aria-label="Close search"
-                                onclick="this.closest('#mp-search-modal').dispatchEvent(new Event('close'))">
-                                <span aria-hidden="true">×</span>
-                            </button>
-                            <div class="mp-modal-content">
-                                <div class="mp-search-header">
-                                    <div id="mp-searchbox" role="search"></div>
-                                    <div class="mp-keyboard-hints">
-                                        <span>
-                                            <kbd class="mp-kbd">↑↓</kbd>
-                                            to navigate
-                                        </span>
-                                        <span>
-                                            <kbd class="mp-kbd">esc</kbd>
-                                            to close
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="mp-results-container">
-                                    ${commonSearchesHtml}
-                                    <div id="mp-hits" role="region" aria-label="Search results"></div>
-                                    <div id="mp-empty-state" class="hidden" role="status" aria-live="polite">
-                                        <div class="mp-empty-message">
-                                            <p>No results found for your search</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // Create and append modal
-            const modalContainer = document.createElement('div');
-            modalContainer.innerHTML = modalHtml;
-            document.body.appendChild(modalContainer.firstElementChild);
-        }
-
         init() {
-            this.createSearchModal();
-
-            // Get modal reference after creation
-            this.modal = document.getElementById('mp-search-modal');
-
-            // Initialize theme before anything else
+            this.createIframe();
+            this.initSearch();
+            this.initEventListeners();
             this.handleThemeChange();
 
-            const searchParameters = this.getSearchParameters();
-            console.log('Search parameters:', searchParameters);
+            if (window.location.hash === '#/search') {
+                this.openModal();
+            }
+        }
 
-            // Initialize Typesense search with dynamic fields
+        initSearch() {
+            const searchParameters = this.getSearchParameters();
+
             const typesenseInstantsearchAdapter = new TypesenseInstantSearchAdapter({
                 server: {
                     apiKey: this.config.typesenseApiKey,
@@ -241,90 +331,68 @@ import './styles.css';
                 additionalSearchParameters: searchParameters
             });
 
-            // Add console logging to help debug
-            console.log('Typesense Configuration:', {
-                nodes: this.config.typesenseNodes,
-                collectionName: this.config.collectionName,
-                searchParameters
-            });
-
             this.search = instantsearch({
                 indexName: this.config.collectionName,
                 searchClient: typesenseInstantsearchAdapter.searchClient,
-                searchFunction: (helper) => {
-                    // Add debugging for search queries
-                    console.log('Search query:', helper.state);
-                    this.handleSearch(helper);
-                }
+                searchFunction: (helper) => this.handleSearch(helper)
             });
 
-            // Initialize widgets and start search
             this.initWidgets();
             this.search.start();
-
-            // Add event listeners after modal and search are initialized
-            this.initEventListeners();
-            this.attachCommonSearchListeners();
-
-            // Check if we should open the modal
-            if (window.location.hash === '#/search') {
-                this.openModal();
-            }
         }
 
         handleSearch(helper) {
-            const container = document.getElementById('mp-hits');
-            const commonSearches = document.querySelector('.mp-common-searches');
-            const emptyState = document.getElementById('mp-empty-state');
+            if (!this.cachedElements.container) {
+                this.cachedElements.container = this.doc.getElementById('mp-hits');
+                this.cachedElements.commonSearches = this.doc.querySelector('.mp-common-searches');
+                this.cachedElements.emptyState = this.doc.getElementById('mp-empty-state');
+                this.cachedElements.loadingState = this.doc.getElementById('mp-loading-state');
+            }
 
-            // Hide empty state by default
+            const { container, commonSearches, emptyState, loadingState } = this.cachedElements;
+
             if (emptyState && !helper.state.query) {
                 emptyState.classList.add('hidden');
             }
 
-            // If no query, hide results and show common searches
-            if (!helper.state.query || !helper.state.query.trim()) {
-                // Reset selection when showing common searches
-                this.selectedIndex = -1;
+            const query = helper.state.query?.trim();
 
-                if (container) {
-                    container.classList.add('hidden');
-                }
-                if (commonSearches) {
-                    commonSearches.classList.remove('hidden');
-                }
-                if (emptyState) {
-                    emptyState.classList.add('hidden');
-                }
+            if (!query) {
+                this.selectedIndex = -1;
+                if (container) container.classList.add('hidden');
+                if (commonSearches) commonSearches.classList.remove('hidden');
+                if (emptyState) emptyState.classList.add('hidden');
+                if (loadingState) loadingState.classList.remove('active');
                 return;
             }
 
-            // Reset selection when showing search results
-            this.selectedIndex = -1;
-
-            // Hide common searches when there's a query
-            if (commonSearches) {
-                commonSearches.classList.add('hidden');
-            }
-
-            // Show the hits container for results
-            if (container) {
-                container.classList.remove('hidden');
-            }
-
-            // Perform the search
+            // Only update UI immediately, defer search
+            if (commonSearches) commonSearches.classList.add('hidden');
+            if (container) container.classList.remove('hidden');
+            if (loadingState) loadingState.classList.add('active');
             helper.search();
         }
 
         initWidgets() {
             this.searchBox = searchBox({
-                container: '#mp-searchbox',
+                container: this.doc.querySelector('#mp-searchbox'),
                 placeholder: 'Search for anything',
                 autofocus: true,
                 showReset: false,
                 showSubmit: false,
                 showLoadingIndicator: false,
                 searchAsYouType: true,
+                queryHook: (query, search) => {
+                    // Clear any pending search
+                    if (this.searchDebounceTimeout) {
+                        clearTimeout(this.searchDebounceTimeout);
+                    }
+
+                    // Use a shorter debounce for a more responsive feel while still preventing too many requests
+                    this.searchDebounceTimeout = setTimeout(() => {
+                        search(query);
+                    }, 80);
+                },
                 cssClasses: {
                     root: '',
                     form: '',
@@ -337,40 +405,35 @@ import './styles.css';
             this.search.addWidgets([
                 this.searchBox,
                 hits({
-                    container: '#mp-hits',
+                    container: this.doc.querySelector('#mp-hits'),
                     cssClasses: {
                         root: '',
-                        list: 'mp-hits-list',
+                        list: 'mp-hits-list list-none',
+                        emptyRoot: 'hidden',
                         item: ''
                     },
                     templates: {
-                        item: (hit, { html, components }) => {
+                        item: (hit) => {
+                            // Hide loading state when results are rendered
+                            const loadingState = this.doc.getElementById('mp-loading-state');
+                            if (loadingState) loadingState.classList.remove('active');
+
                             try {
-                                // Create a temporary div to safely strip HTML
                                 const div = document.createElement('div');
-                                // Use excerpt if available, fall back to html
                                 div.innerHTML = hit.excerpt || hit.html || '';
                                 const text = div.textContent || div.innerText || '';
-
-                                // Get first 120 characters and trim to last complete word
-                                const excerpt = text
-                                    .trim()
-                                    .substring(0, 120)
-                                    .replace(/\s+[^\s]*$/, '...');
-
-                                // Handle highlighted results from Typesense
+                                const excerpt = text.trim().substring(0, 120).replace(/\s+[^\s]*$/, '...');
                                 const title = hit._highlightResult?.title?.value || hit.title || 'Untitled';
 
                                 return `
                                     <a href="${hit.url || '#'}" 
                                         class="mp-result-link"
                                         aria-label="${title.replace(/<[^>]*>/g, '')}">
-                                       <article class="mp-result-item" role="article">
-                                           <h3 class="mp-result-title" role="heading" aria-level="3">${title}</h3>
+                                        <article class="mp-result-item" role="article">
+                                            <h3 class="mp-result-title" role="heading" aria-level="3">${title}</h3>
                                             <p class="mp-result-excerpt" aria-label="Article excerpt">${excerpt}</p>
                                         </article>
                                     </a>
-                                        </h3>
                                 `;
                             } catch (error) {
                                 console.error('Error rendering hit:', error, hit);
@@ -378,34 +441,22 @@ import './styles.css';
                             }
                         },
                         empty: (results) => {
-                            // Only show empty state if we have a query
                             if (results.query && results.query.trim()) {
-                                const emptyState = document.getElementById('mp-empty-state');
-                                const container = document.getElementById('mp-hits');
-
-                                if (container) {
-                                    container.classList.add('hidden');
-                                }
-                                if (emptyState) {
-                                    emptyState.classList.remove('hidden');
-                                } else {
-                                    console.warn('Empty state element not found');
-                                }
+                                const emptyState = this.doc.getElementById('mp-empty-state');
+                                const container = this.doc.getElementById('mp-hits');
+                                const loadingState = this.doc.getElementById('mp-loading-state');
+                                if (container) container.classList.add('hidden');
+                                if (emptyState) emptyState.classList.remove('hidden');
+                                if (loadingState) loadingState.classList.remove('active');
                             }
                             return '';
                         }
-                    },
-                    transformItems: (items) => {
-                        // Simply return the items, state management is handled elsewhere
-                        return items;
                     }
                 })
             ]);
         }
 
         initEventListeners() {
-            if (!this.modal) return;  // Guard clause
-
             // Handle hash change
             window.addEventListener('hashchange', () => {
                 if (window.location.hash === '#/search') {
@@ -415,162 +466,136 @@ import './styles.css';
                 }
             });
 
-            // Modal close event
-            this.modal.addEventListener('close', () => this.closeModal());
-
-            // Prevent clicks on modal content from closing the modal
-            const modalContent = this.modal.querySelector('.mp-modal-content');
-            if (modalContent) {
-                modalContent.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                });
+            // Close button
+            const closeButton = this.doc.querySelector('.mp-close-button');
+            if (closeButton) {
+                closeButton.addEventListener('click', () => this.closeModal());
             }
 
-            // Close on click outside modal content
+            // Click outside to close
             this.modal.addEventListener('click', (e) => {
-                if (e.target === this.modal ||
-                    e.target.classList.contains('mp-modal-container') ||
-                    !e.target.closest('.mp-modal-content')) {
+                if (e.target === this.modal || e.target.classList.contains('mp-backdrop')) {
                     this.closeModal();
                 }
             });
 
-            // Handle Ghost's data-ghost-search buttons
-            const searchButtons = document.querySelectorAll('[data-ghost-search]');
-            searchButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();  // Prevent event from bubbling up
+            // Prevent clicks on modal content from closing
+            const modalContent = this.modal.querySelector('.mp-modal-content');
+            if (modalContent) {
+                modalContent.addEventListener('click', (e) => e.stopPropagation());
+            }
 
-                    // Ensure any existing Ghost search initialization is prevented
-                    if (window.SodoSearch && window.SodoSearch.init) {
-                        window.SodoSearch.init = () => { };
-                    }
+            // Common searches
+            this.attachCommonSearchListeners();
 
-                    // If search isn't initialized yet, initialize it first
-                    if (!window.magicSearch) {
-                        window.magicSearch = new MagicPagesSearch();
-                    }
-
-                    // Small delay to ensure DOM is ready
-                    setTimeout(() => {
-                        this.openModal();
-                        const searchInput = document.querySelector('.mp-search-input');
-                        if (searchInput) {
-                            searchInput.focus();
-                        }
-                    }, 50);
-                });
-            });
-
-            // Keyboard navigation
-            document.addEventListener('keydown', (e) => this.handleKeydown(e));
-
-            // Add cmd/ctrl + k shortcut (Ghost's default)
+            // Parent window keyboard shortcuts
             document.addEventListener('keydown', (e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                     e.preventDefault();
                     this.openModal();
                 }
+                if (e.key === '/' && !e.ctrlKey && !e.metaKey &&
+                    e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    this.openModal();
+                }
             });
+
+            // Iframe keyboard navigation
+            this.doc.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+            // Handle Ghost's search buttons
+            document.querySelectorAll('[data-ghost-search]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.openModal();
+                });
+            });
+
+            // Handle search result clicks
+            const hitsContainer = this.doc.querySelector('#mp-hits');
+            if (hitsContainer) {
+                hitsContainer.addEventListener('click', (e) => {
+                    const resultLink = e.target.closest('.mp-result-link');
+                    if (resultLink) {
+                        e.preventDefault();
+                        window.location.href = resultLink.href;
+                    }
+                });
+            }
         }
 
         attachCommonSearchListeners() {
-            const container = document.getElementById('mp-common-searches-container');
+            const container = this.doc.getElementById('mp-common-searches-container');
             if (!container) return;
 
-            container.removeEventListener('click', this._handleCommonSearchClick);
-            container.removeEventListener('touchend', this._handleCommonSearchClick);
-
-            this._handleCommonSearchClick = (e) => {
+            const handleClick = (e) => {
                 const btn = e.target.closest('.mp-common-search-btn');
                 if (!btn) return;
 
                 e.preventDefault();
                 const searchTerm = btn.dataset.search;
-                e.stopPropagation(); // Prevent any parent handlers from firing
 
-                try {
-                    const searchInput = document.querySelector('.mp-search-input');
-                    if (searchInput) {
-                        // Reset selection before updating input
-                        this.selectedIndex = -1;
-
-                        // Update input and trigger input event
-                        searchInput.value = searchTerm;
-                        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-
-                        // Update InstantSearch helper and trigger search
-                        this.search.helper.setQuery(searchTerm);
-                        this.search.helper.search();
-
-                        // Focus the input and set cursor position
-                        setTimeout(() => {
-                            searchInput.focus();
-                            const length = searchInput.value.length;
-                            searchInput.setSelectionRange(length, length);
-                        }, 0);
-                    }
-                } catch (error) {
-                    console.error('Error handling common search click:', error);
+                const searchInput = this.doc.querySelector('.mp-search-input');
+                if (searchInput) {
+                    this.selectedIndex = -1;
+                    searchInput.value = searchTerm;
+                    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    this.search.helper.setQuery(searchTerm).search();
+                    setTimeout(() => {
+                        searchInput.focus();
+                        searchInput.setSelectionRange(searchTerm.length, searchTerm.length);
+                    }, 0);
                 }
             };
 
-            container.addEventListener('click', this._handleCommonSearchClick);
-            container.addEventListener('touchend', this._handleCommonSearchClick);
+            container.addEventListener('click', handleClick);
+            container.addEventListener('touchend', handleClick);
         }
 
         openModal() {
+            this.iframe.style.pointerEvents = 'auto';
+            this.iframe.style.opacity = '1';
             this.modal.classList.remove('hidden');
-            document.documentElement.style.overflow = 'hidden';
-            document.body.setAttribute('aria-hidden', 'true');
-            const searchInput = document.querySelector('.mp-search-input');
+
+            const searchInput = this.doc.querySelector('.mp-search-input');
             if (searchInput) {
                 searchInput.focus();
             }
+
             history.replaceState(null, null, '#/search');
         }
 
         closeModal() {
+            this.iframe.style.opacity = '0';
+            this.iframe.style.pointerEvents = 'none';
             this.modal.classList.add('hidden');
-            document.documentElement.style.overflow = '';
-            document.body.removeAttribute('aria-hidden');
-            const searchInput = document.querySelector('.mp-search-input');
+            this.selectedIndex = -1;
+
+            const searchInput = this.doc.querySelector('.mp-search-input');
             if (searchInput) {
                 searchInput.value = '';
             }
             this.search.helper.setQuery('').search();
+
             if (window.location.hash === '#/search') {
                 history.replaceState(null, null, window.location.pathname);
             }
         }
 
         handleKeydown(e) {
-            // Don't handle keyboard shortcuts if target is an input
-            const isSearchInput = e.target.classList.contains('mp-search-input');
-
-            // If we're in an input but not the search input, ignore shortcuts
-            if (e.target.tagName === 'INPUT' && !isSearchInput) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.closeModal();
                 return;
             }
 
+            const isSearchInput = e.target.classList.contains('mp-search-input');
+            if (e.target.tagName === 'INPUT' && !isSearchInput) return;
             if (window.innerWidth < 640) return;
 
-            // If the modal is hidden, only handle the open shortcut
-            if (this.modal.classList.contains('hidden')) {
-                if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
-                    e.preventDefault();
-                    this.openModal();
-                }
-                return;
-            }
-
-            // Handle navigation
             switch (e.key) {
-                case 'Escape':
-                    e.preventDefault();
-                    this.closeModal();
-                    break;
                 case 'ArrowDown':
                     e.preventDefault();
                     this.navigateResults('next');
@@ -589,9 +614,14 @@ import './styles.css';
         }
 
         navigateResults(direction) {
-            const results = [...document.querySelectorAll('#mp-hits .mp-result-link, .mp-common-search-btn:not(.hidden)')].filter(
-                el => el.offsetParent !== null && !el.closest('.hidden')
-            );
+            // Cache selector results
+            if (!this.cachedElements.results) {
+                this.cachedElements.results = this.doc.querySelectorAll('#mp-hits .mp-result-link, .mp-common-search-btn:not(.hidden)');
+            }
+
+            const results = [...this.cachedElements.results].filter(
+                el => el.offsetParent !== null && !el.closest('.hidden'));
+            this.cachedElements.results = null; // Clear cache for next navigation
 
             if (results.length === 0) return;
 
@@ -606,21 +636,20 @@ import './styles.css';
             results.forEach(result => result.classList.remove('mp-selected'));
             const selectedElement = results[this.selectedIndex];
             selectedElement.classList.add('mp-selected');
-            selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            selectedElement.scrollIntoView({ block: 'nearest', behavior: 'auto' });
         }
 
         handleEnterKey() {
-            const results = [...document.querySelectorAll('#mp-hits .mp-result-link, .mp-common-search-btn:not(.hidden)')].filter(
+            const results = [...this.doc.querySelectorAll('#mp-hits .mp-result-link, .mp-common-search-btn:not(.hidden)')].filter(
                 el => el.offsetParent !== null && !el.closest('.hidden')
             );
 
             if (this.selectedIndex >= 0 && this.selectedIndex < results.length) {
                 const selectedElement = results[this.selectedIndex];
                 if (selectedElement.classList.contains('mp-result-link')) {
-                    const link = selectedElement;
-                    if (link) window.location.href = link.href;
+                    window.location.href = selectedElement.href;
                 } else {
-                    const searchBox = document.querySelector('.mp-search-input');
+                    const searchBox = this.doc.querySelector('.mp-search-input');
                     searchBox.value = selectedElement.textContent.trim();
                     searchBox.dispatchEvent(new Event('input', { bubbles: true }));
                 }
@@ -628,15 +657,13 @@ import './styles.css';
         }
 
         handleThemeChange() {
-            const wrapper = document.getElementById('mp-search-wrapper');
-            if (!wrapper) return;
+            if (!this.wrapper) return;
 
             const setTheme = (isDark) => {
-                wrapper.classList.toggle('dark', isDark);
+                this.wrapper.classList.toggle('dark', isDark);
             };
 
-            // Remove any existing theme first
-            wrapper.classList.remove('dark');
+            this.wrapper.classList.remove('dark');
 
             switch (this.config.theme) {
                 case 'dark':
@@ -658,13 +685,12 @@ import './styles.css';
     // Export to window
     window.MagicPagesSearch = MagicPagesSearch;
 
-    // Auto-initialize when the script loads
+    // Auto-initialize
     document.addEventListener('DOMContentLoaded', () => {
-        // Initialize if we have a config, if #/search is in the URL, or if there are search buttons
         if (window.__MP_SEARCH_CONFIG__ ||
             window.location.hash === '#/search' ||
             document.querySelectorAll('[data-ghost-search]').length > 0) {
-            window.magicSearch = new MagicPagesSearch();
+            window.magicPagesSearch = new MagicPagesSearch();
         }
     });
 })();
