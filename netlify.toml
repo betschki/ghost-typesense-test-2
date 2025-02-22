@@ -1,13 +1,16 @@
 [build]
-  base = "/"
   command = "npm install && npm run build"
-  publish = "apps/webhook-handler/public"
-
-[build.environment]
-  NODE_VERSION = "18"
-  NPM_FLAGS = "--no-package-lock"
+  functions = "apps/webhook-handler/dist"
+  publish = "public"
 
 [functions]
-  directory = "apps/webhook-handler/dist"
   node_bundler = "esbuild"
   included_files = ["apps/webhook-handler/dist/**"]
+
+[template.environment]
+  GHOST_URL = "Your Ghost site URL"
+  GHOST_CONTENT_API_KEY = "Your Ghost Content API key"
+  TYPESENSE_HOST = "Your Typesense host"
+  TYPESENSE_API_KEY = "Your Typesense API key"
+  COLLECTION_NAME = "Name of your Typesense collection (default: posts)"
+  WEBHOOK_SECRET = "A secure random string to validate webhook requests"
